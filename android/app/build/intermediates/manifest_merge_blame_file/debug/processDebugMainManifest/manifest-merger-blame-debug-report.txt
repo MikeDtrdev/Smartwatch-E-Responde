@@ -1,0 +1,278 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.eresponde.smartwatch"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- Network permissions -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:4:5-67
+12-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:4:22-64
+13    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+13-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:5:5-79
+13-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:5:22-76
+14
+15    <!-- Location permissions -->
+16    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+16-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:8:5-79
+16-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:8:22-76
+17    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+17-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:9:5-81
+17-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:9:22-78
+18    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+18-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:10:5-85
+18-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:10:22-82
+19
+20    <!-- System permissions -->
+21    <uses-permission android:name="android.permission.WAKE_LOCK" />
+21-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:13:5-68
+21-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:13:22-65
+22    <uses-permission android:name="android.permission.VIBRATE" />
+22-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:14:5-66
+22-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:14:22-63
+23
+24    <!-- Storage permissions -->
+25    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+25-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:17:5-80
+25-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:17:22-77
+26    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+26-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:18:5-81
+26-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:18:22-78
+27
+28    <!-- Communication permissions -->
+29    <uses-permission android:name="android.permission.SEND_SMS" />
+29-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:21:5-67
+29-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:21:22-64
+30    <uses-permission android:name="android.permission.READ_CONTACTS" />
+30-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:22:5-72
+30-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:22:22-69
+31
+32    <!-- Bluetooth permissions -->
+33    <uses-permission android:name="android.permission.BLUETOOTH" />
+33-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:25:5-68
+33-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:25:22-65
+34    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+34-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:26:5-74
+34-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:26:22-71
+35
+36    <!-- Phone permissions -->
+37    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+37-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:29:5-75
+37-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:29:22-72
+38
+39    <!-- Smartwatch specific features - Made optional to prevent crashes -->
+40    <uses-feature
+40-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:32:5-99
+41        android:name="android.hardware.sensor.accelerometer"
+41-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:32:19-71
+42        android:required="false" />
+42-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:32:72-96
+43    <uses-feature
+43-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:33:5-95
+44        android:name="android.hardware.sensor.gyroscope"
+44-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:33:19-67
+45        android:required="false" />
+45-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:33:68-92
+46    <uses-feature
+46-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:34:5-87
+47        android:name="android.hardware.location"
+47-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:34:19-59
+48        android:required="false" />
+48-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:34:60-84
+49    <uses-feature
+49-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:35:5-91
+50        android:name="android.hardware.location.gps"
+50-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:35:19-63
+51        android:required="false" />
+51-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:35:64-88
+52    <uses-feature
+52-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:36:5-88
+53        android:name="android.hardware.telephony"
+53-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:36:19-60
+54        android:required="false" />
+54-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:36:61-85
+55    <uses-feature
+55-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:37:5-85
+56        android:name="android.hardware.camera"
+56-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:37:19-57
+57        android:required="false" />
+57-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:37:58-82
+58    <uses-feature
+58-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:38:5-83
+59        android:name="android.hardware.wifi"
+59-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:38:19-55
+60        android:required="false" />
+60-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:38:56-80
+61    <uses-feature
+61-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:39:5-88
+62        android:name="android.hardware.bluetooth"
+62-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:39:19-60
+63        android:required="false" />
+63-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:39:61-85
+64
+65    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+65-->[com.facebook.flipper:flipper:0.125.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\fbdbdc4b261af4a3db2222634c0c26c6\transformed\jetified-flipper-0.125.0\AndroidManifest.xml:16:5-76
+65-->[com.facebook.flipper:flipper:0.125.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\fbdbdc4b261af4a3db2222634c0c26c6\transformed\jetified-flipper-0.125.0\AndroidManifest.xml:16:22-73
+66    <!--
+67    This manifest file is used only by Gradle to configure debug-only capabilities
+68    for React Native Apps.
+69    -->
+70    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+70-->[com.facebook.react:react-android:0.80.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\6e3b62b0b0f8caf36db89572ad07c65c\transformed\jetified-react-android-0.80.2-debug\AndroidManifest.xml:16:5-78
+70-->[com.facebook.react:react-android:0.80.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\6e3b62b0b0f8caf36db89572ad07c65c\transformed\jetified-react-android-0.80.2-debug\AndroidManifest.xml:16:22-75
+71
+72    <permission
+72-->[androidx.core:core:1.13.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\b489c6b39d6550e629e11d13bd90bd79\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+73        android:name="com.eresponde.smartwatch.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+73-->[androidx.core:core:1.13.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\b489c6b39d6550e629e11d13bd90bd79\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+74        android:protectionLevel="signature" />
+74-->[androidx.core:core:1.13.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\b489c6b39d6550e629e11d13bd90bd79\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+75
+76    <uses-permission android:name="com.eresponde.smartwatch.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+76-->[androidx.core:core:1.13.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\b489c6b39d6550e629e11d13bd90bd79\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+76-->[androidx.core:core:1.13.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\b489c6b39d6550e629e11d13bd90bd79\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+77
+78    <application
+78-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:41:5-68:19
+79        android:name="com.eresponde.smartwatch.MainApplication"
+79-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:42:7-38
+80        android:allowBackup="false"
+80-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:46:7-34
+81        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+81-->[androidx.core:core:1.13.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\b489c6b39d6550e629e11d13bd90bd79\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+82        android:debuggable="true"
+83        android:extractNativeLibs="true"
+83-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:53:7-39
+84        android:hardwareAccelerated="true"
+84-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:48:7-41
+85        android:icon="@mipmap/ic_launcher"
+85-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:44:7-41
+86        android:label="@string/app_name"
+86-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:43:7-39
+87        android:largeHeap="true"
+87-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:49:7-31
+88        android:networkSecurityConfig="@xml/network_security_config"
+88-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:52:7-67
+89        android:requestLegacyExternalStorage="true"
+89-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:50:7-50
+90        android:roundIcon="@mipmap/ic_launcher_round"
+90-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:45:7-52
+91        android:theme="@style/AppTheme"
+91-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:47:7-38
+92        android:usesCleartextTraffic="true"
+92-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:51:7-42
+93        android:vmSafeMode="true" >
+93-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:54:7-32
+94        <activity
+94-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:55:7-67:18
+95            android:name="com.eresponde.smartwatch.MainActivity"
+95-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:56:9-37
+96            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+96-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:58:9-118
+97            android:exported="true"
+97-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:61:9-32
+98            android:label="@string/app_name"
+98-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:57:9-41
+99            android:launchMode="singleTask"
+99-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:59:9-40
+100            android:screenOrientation="portrait"
+100-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:62:9-45
+101            android:windowSoftInputMode="adjustResize" >
+101-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:60:9-51
+102            <intent-filter>
+102-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:63:9-66:25
+103                <action android:name="android.intent.action.MAIN" />
+103-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:64:13-65
+103-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:64:21-62
+104
+105                <category android:name="android.intent.category.LAUNCHER" />
+105-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:65:13-73
+105-->C:\smartwatch\android\app\src\main\AndroidManifest.xml:65:23-70
+106            </intent-filter>
+107        </activity>
+108        <activity
+108-->[com.facebook.react:react-android:0.80.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\6e3b62b0b0f8caf36db89572ad07c65c\transformed\jetified-react-android-0.80.2-debug\AndroidManifest.xml:19:9-21:40
+109            android:name="com.facebook.react.devsupport.DevSettingsActivity"
+109-->[com.facebook.react:react-android:0.80.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\6e3b62b0b0f8caf36db89572ad07c65c\transformed\jetified-react-android-0.80.2-debug\AndroidManifest.xml:20:13-77
+110            android:exported="false" />
+110-->[com.facebook.react:react-android:0.80.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\6e3b62b0b0f8caf36db89572ad07c65c\transformed\jetified-react-android-0.80.2-debug\AndroidManifest.xml:21:13-37
+111
+112        <meta-data
+112-->[com.facebook.soloader:soloader:0.12.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\c43803e759edbd9209724eb29bb70198\transformed\jetified-soloader-0.12.1\AndroidManifest.xml:12:9-14:37
+113            android:name="com.facebook.soloader.enabled"
+113-->[com.facebook.soloader:soloader:0.12.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\c43803e759edbd9209724eb29bb70198\transformed\jetified-soloader-0.12.1\AndroidManifest.xml:13:13-57
+114            android:value="false" />
+114-->[com.facebook.soloader:soloader:0.12.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\c43803e759edbd9209724eb29bb70198\transformed\jetified-soloader-0.12.1\AndroidManifest.xml:14:13-34
+115
+116        <provider
+116-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+117            android:name="androidx.startup.InitializationProvider"
+117-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:25:13-67
+118            android:authorities="com.eresponde.smartwatch.androidx-startup"
+118-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:26:13-68
+119            android:exported="false" >
+119-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:27:13-37
+120            <meta-data
+120-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+121                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+121-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:30:17-75
+122                android:value="androidx.startup" />
+122-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Miked\.gradle\caches\8.11.1\transforms\38f43fbb3feedb50ee069a8f3924cbff\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:31:17-49
+123            <meta-data
+123-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\e29c4db3f1be54d34a842f2dc020e5d9\transformed\jetified-lifecycle-process-2.6.2\AndroidManifest.xml:29:13-31:52
+124                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+124-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\e29c4db3f1be54d34a842f2dc020e5d9\transformed\jetified-lifecycle-process-2.6.2\AndroidManifest.xml:30:17-78
+125                android:value="androidx.startup" />
+125-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\Miked\.gradle\caches\8.11.1\transforms\e29c4db3f1be54d34a842f2dc020e5d9\transformed\jetified-lifecycle-process-2.6.2\AndroidManifest.xml:31:17-49
+126            <meta-data
+126-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+127                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+127-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+128                android:value="androidx.startup" />
+128-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+129        </provider>
+130
+131        <receiver
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+132            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+132-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+133            android:directBootAware="false"
+133-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+134            android:enabled="true"
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+135            android:exported="true"
+135-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+136            android:permission="android.permission.DUMP" >
+136-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+137            <intent-filter>
+137-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+138                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+138-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+139            </intent-filter>
+140            <intent-filter>
+140-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+141                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+141-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+141-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+142            </intent-filter>
+143            <intent-filter>
+143-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+144                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+144-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+144-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+145            </intent-filter>
+146            <intent-filter>
+146-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+147                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+147-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+147-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Miked\.gradle\caches\8.11.1\transforms\a5105ad086ea3a5a9610f81d05843dbe\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+148            </intent-filter>
+149        </receiver>
+150    </application>
+151
+152</manifest>

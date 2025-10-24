@@ -1,0 +1,12 @@
+{
+  "reactNativeVersion": "0.80.2",
+  "dependencies": {},
+  "commands": {},
+  "project": {
+    "android": {
+      "sourceDir": "../android",
+      "appName": "app",
+      "packageName": "com.eresponde.smartwatch"
+    }
+  }
+} 

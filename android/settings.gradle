@@ -1,0 +1,4 @@
+rootProject.name = 'E-Responde-Smartwatch'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')
+
