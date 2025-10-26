@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { useMinimalAuth } from '../../services/minimalAuthContext';
 import SOSService from '../../services/sosService';
@@ -302,7 +303,7 @@ const MinimalDashboard: FC = () => {
               </TouchableOpacity>
             </View>
             
-            <View style={styles.modalBody}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
               <Text style={styles.featureTitle}>Manual SOS Alert</Text>
               <Text style={styles.featureDescription}>
                 Tap the SOS button to send an emergency alert with your location
@@ -329,7 +330,7 @@ const MinimalDashboard: FC = () => {
               <Text style={styles.featureDescription}>
                 Stay connected to your phone for continuous monitoring and alerts
               </Text>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>

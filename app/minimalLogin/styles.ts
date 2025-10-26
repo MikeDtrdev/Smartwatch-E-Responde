@@ -13,22 +13,26 @@ export const createStyles = () => StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
+    marginTop: 60,
   },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 20,
+    marginBottom: 5,
   },
   title: {
     fontSize: SMARTWATCH_CONSTANTS.FONT_SIZE_LARGE,
     fontWeight: 'bold',
     color: COLORS.BACKGROUND,
     marginBottom: 5,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: SMARTWATCH_CONSTANTS.FONT_SIZE_MEDIUM,
+    fontSize: SMARTWATCH_CONSTANTS.FONT_SIZE_SMALL,
     color: COLORS.BACKGROUND,
-    opacity: 0.8,
+    opacity: 0.7,
+    marginBottom: -5,
+    textAlign: 'center',
   },
   errorContainer: {
     backgroundColor: 'rgba(255, 0, 0, 0.1)',
@@ -50,7 +54,7 @@ export const createStyles = () => StyleSheet.create({
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 5,
-    padding: 15,
+    padding: 8,
     color: COLORS.BACKGROUND,
     fontSize: SMARTWATCH_CONSTANTS.FONT_SIZE_MEDIUM,
   },
@@ -76,12 +80,12 @@ export const createStyles = () => StyleSheet.create({
   },
   passwordInput: {
     flex: 1,
-    padding: 15,
+    padding: 8,
     color: COLORS.BACKGROUND,
     fontSize: SMARTWATCH_CONSTANTS.FONT_SIZE_MEDIUM,
   },
   passwordToggle: {
-    padding: 15,
+    padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
