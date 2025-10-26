@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useMinimalAuth } from '../../services/minimalAuthContext';
 import { COLORS } from '../../services/constants';
@@ -18,6 +19,8 @@ const MinimalLogin: FC = () => {
   const { login, isLoading, error } = useMinimalAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEmailDropdown, setShowEmailDropdown] = useState(false);
 
   const styles = createStyles();
 
@@ -38,8 +41,13 @@ const MinimalLogin: FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <Image 
+          source={require('../../assets/images/logosmartwatch.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.title}>E-Responde</Text>
-        <Text style={styles.subtitle}>Smartwatch</Text>
+        <Text style={styles.subtitle}>Smartwatch version - minimal features</Text>
       </View>
 
       {error && (
@@ -49,27 +57,54 @@ const MinimalLogin: FC = () => {
       )}
 
       <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor={COLORS.BACKGROUND}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <View style={styles.emailContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={COLORS.BACKGROUND}
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setShowEmailDropdown(text.length > 0);
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {showEmailDropdown && (
+            <View style={styles.dropdown}>
+              <Text style={styles.dropdownText}>
+                Only E-responde registered accounts can work with this smartwatch application.
+              </Text>
+            </View>
+          )}
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={COLORS.BACKGROUND}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor={COLORS.BACKGROUND}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            style={styles.passwordToggle}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Image 
+              source={showPassword ? 
+                require('../../assets/images/eyeoff.png') : 
+                require('../../assets/images/eyeon.png')
+              } 
+              style={styles.passwordToggleIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
@@ -84,14 +119,6 @@ const MinimalLogin: FC = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.infoSection}>
-        <Text style={styles.infoText}>
-          Enter your E-Responde credentials
-        </Text>
-        <Text style={styles.infoSubtext}>
-          Smartwatch version - minimal features
-        </Text>
-      </View>
     </View>
   );
 };

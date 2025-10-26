@@ -140,7 +140,7 @@ class AdminReportingService {
       const alerts = await this.getAllSOSAlerts();
       return alerts.filter(alert => alert.location).map(alert => ({
         ...alert,
-        distance: this.calculateDistance(alert.location, { latitude: 14.5995, longitude: 120.9842 }) // Manila center
+        distance: null // Distance calculation removed - no reference point
       }));
     } catch (error) {
       console.error('Admin Reporting Service: Failed to get alerts by location:', error);

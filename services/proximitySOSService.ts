@@ -1,5 +1,6 @@
 import { DeviceEventEmitter, NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import SOSService from './sosService';
+import { GeocodingService, GeocodingResult } from './geocodingService';
 
 interface ProximityData {
   distance: number;
@@ -120,8 +121,8 @@ class ProximitySOSService {
     try {
       console.log(`Proximity SOS Service: Triggering SOS for distance ${distance.toFixed(2)}m`);
       
-      // Get current location (simplified)
-      const location = await this.getCurrentLocation();
+      // Get current location with geocoding
+      const location = await this.getCurrentLocationWithGeocoding();
       
       // Send SOS alert
       await SOSService.sendSOSAlert('proximity', userId, location);
@@ -132,14 +133,67 @@ class ProximitySOSService {
   }
 
   /**
-   * Get current location (simplified for demo)
+   * Get current location with geocoding using the same method as main SOS service
    */
-  private async getCurrentLocation(): Promise<{ latitude: number; longitude: number }> {
-    // In a real implementation, you'd use geolocation
-    return {
-      latitude: 14.5995 + (Math.random() - 0.5) * 0.01, // Manila area
-      longitude: 120.9842 + (Math.random() - 0.5) * 0.01
-    };
+  private async getCurrentLocationWithGeocoding(): Promise<GeocodingResult | null> {
+    try {
+      console.log('Proximity SOS Service: Getting GPS location with geocoding...');
+      
+      // Use the same GPS method as the main SOS service
+      const Geolocation = require('@react-native-community/geolocation').default;
+      
+      // First, capture location coordinates quickly
+      const locationPromise = new Promise<{latitude: number, longitude: number}>((resolve, reject) => {
+        Geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            console.log('Proximity SOS Service: Location captured - Lat:', latitude, 'Lng:', longitude, 'Accuracy:', `${accuracy}m`);
+            
+            // Accept coordinates with reasonable accuracy
+            if (accuracy <= 200) {
+              console.log(`Proximity SOS Service: Accepting coordinates with ${accuracy}m accuracy`);
+              resolve({ latitude, longitude });
+            } else {
+              console.log(`Proximity SOS Service: Accuracy ${accuracy}m too poor, rejecting coordinates`);
+              reject(new Error(`GPS accuracy too poor: ${accuracy}m`));
+            }
+          },
+          (error) => {
+            console.log('Proximity SOS Service: Location error:', error);
+            reject(error);
+          },
+          {
+            enableHighAccuracy: false, // Faster capture
+            timeout: 8000, // Reduced timeout for faster capture
+            maximumAge: 30000 // Accept cached location up to 30 seconds old
+          }
+        );
+      });
+
+      // Wait for location with reduced timeout
+      const coordinates = await Promise.race([
+        locationPromise,
+        new Promise<{latitude: number, longitude: number}>((_, reject) => 
+          setTimeout(() => reject(new Error('Location timeout')), 8000)
+        )
+      ]);
+
+      console.log('Proximity SOS Service: Location captured successfully:', coordinates);
+
+      // Now do reverse geocoding
+      console.log('Proximity SOS Service: Starting reverse geocoding...');
+      const geocodingResult = await GeocodingService.reverseGeocode(
+        coordinates.latitude, 
+        coordinates.longitude
+      );
+
+      console.log('Proximity SOS Service: Geocoding completed:', geocodingResult);
+      return geocodingResult;
+
+    } catch (error) {
+      console.error('Proximity SOS Service: GPS/Geocoding error:', error);
+      return null;
+    }
   }
 
   /**
