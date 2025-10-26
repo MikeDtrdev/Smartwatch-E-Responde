@@ -6,6 +6,8 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useMinimalAuth } from '../../services/minimalAuthContext';
 import SOSService from '../../services/sosService';
@@ -20,10 +22,13 @@ const MinimalDashboard: FC = () => {
   const { user, logout, error } = useMinimalAuth();
   const [isSOSActive, setIsSOSActive] = useState(false);
   const [sosCountdown, setSosCountdown] = useState<number | null>(null);
+  const [isGPSLoading, setIsGPSLoading] = useState(false);
   const [proximityStatus, setProximityStatus] = useState('Connected');
   const [shakeCount, setShakeCount] = useState(0);
   const [isPaired, setIsPaired] = useState(false);
   const [deviceStatus, setDeviceStatus] = useState('Initializing...');
+  const [showSOSInfo, setShowSOSInfo] = useState(false);
+  const [isShakeSOSEnabled, setIsShakeSOSEnabled] = useState(false);
 
   const styles = createStyles();
 
@@ -42,8 +47,12 @@ const MinimalDashboard: FC = () => {
           // Start proximity monitoring
           ProximitySOSService.startMonitoring(user.uid);
           
-          // Start shake detection
-          ShakeSOSService.startMonitoring(user.uid);
+          // DO NOT start shake detection automatically - only when toggle is ON
+          // ShakeSOSService.startMonitoring(user.uid); // Removed - only start when toggle is enabled
+          
+          // Ensure shake detection is OFF by default
+          ShakeSOSService.stopMonitoring();
+          setIsShakeSOSEnabled(false);
           
           // Update proximity status periodically
           const proximityInterval = setInterval(() => {
@@ -88,9 +97,21 @@ const MinimalDashboard: FC = () => {
   }, [user?.uid]);
 
   const handleSOS = async () => {
-    if (isSOSActive) return;
+    // Safety check: Only allow SOS if button is actually pressed and not already active
+    if (isSOSActive || isGPSLoading) {
+      console.log('SOS Button: Already active or loading, ignoring press');
+      return;
+    }
+
+    // Additional safety check: Ensure user is authenticated
+    if (!user?.uid) {
+      console.log('SOS Button: User not authenticated, ignoring press');
+      Alert.alert('Error', 'User not authenticated');
+      return;
+    }
 
     try {
+      console.log('SOS Button: Manual SOS button pressed - starting countdown');
       setIsSOSActive(true);
       setSosCountdown(3);
       
@@ -108,23 +129,22 @@ const MinimalDashboard: FC = () => {
       // Wait for countdown
       setTimeout(async () => {
         try {
-          // Send SOS alert using the service with location
+          setIsGPSLoading(true);
+          
+          // Send SOS alert using the service - it will get location automatically
           if (user?.uid) {
-            // Get current location for manual SOS
-            const location = {
-              latitude: 14.5995 + (Math.random() - 0.5) * 0.01, // Manila area
-              longitude: 120.9842 + (Math.random() - 0.5) * 0.01
-            };
-            await SOSService.sendSOSAlert('manual', user.uid, location);
+            await SOSService.sendSOSAlert('manual', user.uid);
           }
           
           setIsSOSActive(false);
           setSosCountdown(null);
+          setIsGPSLoading(false);
         } catch (error) {
           console.error('Minimal Dashboard: Error sending SOS:', error);
           Alert.alert('Error', 'Failed to send SOS alert');
           setIsSOSActive(false);
           setSosCountdown(null);
+          setIsGPSLoading(false);
         }
       }, 3000);
 
@@ -146,6 +166,25 @@ const MinimalDashboard: FC = () => {
       Alert.alert('Error', 'Failed to logout');
     }
   };
+
+  const toggleShakeSOS = () => {
+    if (isShakeSOSEnabled) {
+      // Disable shake SOS
+      ShakeSOSService.stopMonitoring();
+      setIsShakeSOSEnabled(false);
+      console.log('Shake SOS: Disabled');
+    } else {
+      // Enable shake SOS
+      if (user?.uid) {
+        ShakeSOSService.startMonitoring(user.uid);
+        setIsShakeSOSEnabled(true);
+        console.log('Shake SOS: Enabled');
+      } else {
+        Alert.alert('Error', 'User not authenticated');
+      }
+    }
+  };
+
 
   if (error) {
     return (
@@ -172,59 +211,70 @@ const MinimalDashboard: FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header with Info Button */}
       <View style={styles.header}>
-        <Text style={styles.title}>E-Responde</Text>
-        <Text style={styles.subtitle}>Smartwatch</Text>
-      </View>
-
-      {/* User Info */}
-      <View style={styles.userInfo}>
-        <Text style={styles.userText}>Welcome, {user?.email || 'User'}</Text>
-        <Text style={styles.statusText}>Device: {deviceStatus}</Text>
-        <Text style={styles.statusText}>Status: {proximityStatus}</Text>
-        <Text style={styles.statusText}>Shake Count: {shakeCount}/3</Text>
-        <Text style={styles.statusText}>Paired: {isPaired ? 'Yes' : 'No'}</Text>
+        <View style={styles.headerContent}>
+          <View style={styles.userInfo}>
+            <Text style={styles.userText}>Welcome, {user?.email || 'User'}</Text>
+            <Text style={styles.statusText}>Status: {proximityStatus}</Text>
+            <Text style={styles.statusText}>Shake Count: {shakeCount}/3</Text>
+            <Text style={styles.statusText}>Paired: {isPaired ? 'Yes' : 'No'}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.infoButton}
+            onPress={() => setShowSOSInfo(true)}
+          >
+            <Text style={styles.infoButtonText}>i</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* SOS Button */}
       <TouchableOpacity
         style={[
           styles.sosButton,
-          isSOSActive && styles.sosButtonActive
+          (isSOSActive || isGPSLoading) && styles.sosButtonActive
         ]}
         onPress={handleSOS}
-        disabled={isSOSActive}
+        disabled={isSOSActive || isGPSLoading}
       >
         {isSOSActive && sosCountdown ? (
           <View style={styles.sosCountdown}>
             <Text style={styles.sosCountdownText}>{sosCountdown}</Text>
             <Text style={styles.sosCountdownLabel}>Sending...</Text>
           </View>
+        ) : isGPSLoading ? (
+          <View style={styles.sosLoading}>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text style={styles.sosLoadingText}>Sending SOS...</Text>
+          </View>
         ) : (
           <View style={styles.sosContent}>
-            <Text style={styles.sosText}>SOS</Text>
-            <Text style={styles.sosSubtext}>Emergency</Text>
+            <Text style={styles.sosText}>SEND SOS</Text>
           </View>
         )}
       </TouchableOpacity>
 
 
-      {/* Info Section */}
-      <View style={styles.infoSection}>
-        <Text style={styles.infoText}>
-          Emergency SOS Features:
-        </Text>
-        <Text style={styles.infoSubtext}>
-          • Tap SOS button for manual alert
-        </Text>
-        <Text style={styles.infoSubtext}>
-          • Shake 3 times for shake alert
-        </Text>
-        <Text style={styles.infoSubtext}>
-          • Auto alert when {'>'}5m from phone
-        </Text>
-      </View>
+
+
+      {/* Triple Shake SOS Toggle */}
+      <TouchableOpacity
+        style={[styles.shakeToggleButton, isShakeSOSEnabled && styles.shakeToggleButtonActive]}
+        onPress={toggleShakeSOS}
+      >
+        <View style={styles.toggleContainer}>
+          <View style={[styles.toggleSwitch, isShakeSOSEnabled && styles.toggleSwitchActive]}>
+            <View style={[styles.toggleThumb, isShakeSOSEnabled && styles.toggleThumbActive]} />
+          </View>
+          <View style={styles.toggleContent}>
+            <Text style={styles.shakeToggleText}>Shake SOS Detection</Text>
+            <Text style={styles.shakeToggleSubtext}>
+              {isShakeSOSEnabled ? 'Shake 3x to trigger SOS' : 'Tap to enable shake detection'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
 
       {/* Logout Button */}
       <TouchableOpacity
@@ -233,6 +283,57 @@ const MinimalDashboard: FC = () => {
       >
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
+
+      {/* SOS Info Modal */}
+      <Modal
+        visible={showSOSInfo}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSOSInfo(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Emergency SOS Features</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowSOSInfo(false)}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+              <Text style={styles.featureTitle}>Manual SOS Alert</Text>
+              <Text style={styles.featureDescription}>
+                Tap the SOS button to send an emergency alert with your location
+              </Text>
+              
+              <Text style={styles.featureTitle}>Shake Detection Toggle</Text>
+              <Text style={styles.featureDescription}>
+                Use the toggle button above to enable/disable shake detection. When enabled, shake your device 3 times quickly to automatically trigger an SOS alert with your location
+              </Text>
+              
+              <Text style={styles.featureTitle}>Toggle Control</Text>
+              <Text style={styles.featureDescription}>
+                • Toggle ON: Shake detection active - shake 3x to trigger SOS{'\n'}
+                • Toggle OFF: Shake detection disabled - no accidental triggers{'\n'}
+                • Default: OFF when you log in - enable manually when needed
+              </Text>
+              
+              <Text style={styles.featureTitle}>Proximity Alert</Text>
+              <Text style={styles.featureDescription}>
+                Automatic alert when you move more than 5 meters away from your phone
+              </Text>
+              
+              <Text style={styles.featureTitle}>Device Pairing</Text>
+              <Text style={styles.featureDescription}>
+                Stay connected to your phone for continuous monitoring and alerts
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

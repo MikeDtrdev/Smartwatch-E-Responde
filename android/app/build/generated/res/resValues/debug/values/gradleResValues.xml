@@ -8,6 +8,6 @@
     <!-- Value from default config. -->
     <string name="app_name" translatable="false">E-Responde Smartwatch</string>
     <!-- Value from default config. -->
-    <string name="react_native_dev_server_ip" translatable="false">192.168.1.34</string>
+    <string name="react_native_dev_server_ip" translatable="false">169.254.20.104</string>
 
 </resources>

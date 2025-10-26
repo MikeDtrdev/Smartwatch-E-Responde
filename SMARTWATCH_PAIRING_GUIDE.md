@@ -121,7 +121,7 @@ e-responde-default-rtdb/
 │           ├── timestamp: 1761255987589
 │           ├── type: "manual" | "proximity" | "shake"
 │           ├── userId: "zg9O24ghQoh6wAXofgeg83cqzvA3"
-│           ├── location: { latitude: 14.5995, longitude: 120.9842 }
+│           ├── location: { latitude: 0.000000, longitude: 0.000000 }
 │           └── message: "Manual SOS Alert - User triggered emergency button"
 └── user_pairings/
     └── [userId]/

@@ -1,7 +1,9 @@
 import { Alert, Vibration, Platform, PermissionsAndroid } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 import { database } from '../firebaseConfig';
 import { ref, push, set } from 'firebase/database';
 import PairingService from './pairingService';
+import { GeocodingService, GeocodingResult } from './geocodingService';
 
 export interface SOSAlert {
   id: string;
@@ -10,6 +12,10 @@ export interface SOSAlert {
   location?: {
     latitude: number;
     longitude: number;
+    address?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
   };
   message: string;
   userId: string;
@@ -24,6 +30,12 @@ class SOSService {
    * Send SOS alert with vibration and notification
    */
   async sendSOSAlert(type: 'manual' | 'proximity' | 'shake', userId: string, location?: { latitude: number; longitude: number }) {
+    // Safety check: Only allow SOS if explicitly triggered
+    if (!type || !userId) {
+      console.log('SOS Service: Invalid SOS request - missing type or userId');
+      return;
+    }
+
     const now = Date.now();
     
     // Check cooldown to prevent spam
@@ -35,11 +47,27 @@ class SOSService {
     this.lastSOSTime = now;
     this.isActive = true;
 
+    console.log(`SOS Service: Processing ${type} SOS alert for user ${userId}`);
+
     try {
-      // Get location if not provided
-      const alertLocation = location || await this.getCurrentLocation();
+      // Get REAL GPS location - no fallback
+      const alertLocation = await this.getRealGPSLocation();
       
-      // Create SOS alert object
+      if (!alertLocation) {
+        console.error('SOS Service: Cannot send SOS - GPS location unavailable');
+        Alert.alert(
+          'Location Error',
+          'Unable to get your current location. Please try again.',
+          [
+            { text: 'Try Again', onPress: () => this.sendSOSAlert(type, userId, location) },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+        this.isActive = false;
+        return;
+      }
+
+      // Create SOS alert object with REAL coordinates
       const sosAlert: SOSAlert = {
         id: `sos_${now}`,
         timestamp: now,
@@ -61,9 +89,12 @@ class SOSService {
       // Send notification to paired mobile app
       await PairingService.sendSOSToMobile(sosAlert);
 
-      console.log('SOS Service: Alert sent successfully', sosAlert);
+      console.log('SOS Service: Alert sent successfully with REAL GPS coordinates', sosAlert);
     } catch (error) {
       console.error('SOS Service: Failed to send alert:', error);
+      Alert.alert('SOS Error', 'Failed to send SOS alert');
+    } finally {
+      this.isActive = false;
     }
   }
 
@@ -73,7 +104,7 @@ class SOSService {
   private getSOSMessage(type: 'manual' | 'proximity' | 'shake'): string {
     switch (type) {
       case 'manual':
-        return 'Manual SOS Alert - User pressed SOS button';
+        return 'SOS Alert - User pressed SOS button';
       case 'proximity':
         return 'Proximity SOS Alert - Smartwatch disconnected from phone (>5m)';
       case 'shake':
@@ -100,8 +131,8 @@ class SOSService {
    * Show SOS alert dialog
    */
   private showSOSAlert(type: 'manual' | 'proximity' | 'shake') {
-    const title = '🚨 SOS ALERT SENT 🚨';
-    const message = this.getSOSMessage(type);
+    const title = 'SOS ALERT SENT';
+    const message = 'Your emergency alert has been sent successfully with your current location.';
     
     Alert.alert(
       title,
@@ -147,18 +178,31 @@ class SOSService {
   }
 
   /**
-   * Get current location using GPS
+   * Check if location permissions are granted
    */
-  private async getCurrentLocation(): Promise<{ latitude: number; longitude: number }> {
-    try {
-      // For now, use fallback location to prevent crashes
-      // TODO: Implement proper GPS location tracking when Geolocation package is fixed
-      console.log('SOS Service: Using fallback location (GPS temporarily disabled)');
-      return this.getFallbackLocation();
-      
-      /* GPS Location Code - Temporarily Disabled
-      // Request location permissions on Android
-      if (Platform.OS === 'android') {
+  private async checkLocationPermissions(): Promise<boolean> {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        console.log('SOS Service: Location permission already granted:', granted);
+        return granted;
+      } catch (error) {
+        console.error('SOS Service: Error checking permissions:', error);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  }
+
+  /**
+   * Request location permissions
+   */
+  private async requestLocationPermissions(): Promise<boolean> {
+    if (Platform.OS === 'android') {
+      try {
+        console.log('SOS Service: Requesting location permissions...');
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
@@ -170,56 +214,113 @@ class SOSService {
           }
         );
         
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.warn('SOS Service: Location permission denied, using fallback location');
-          return this.getFallbackLocation();
+        console.log('SOS Service: Permission request result:', granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (error) {
+        console.error('SOS Service: Error requesting permissions:', error);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  }
+
+  /**
+   * Get REAL GPS location with fast capture and geocoding
+   */
+  private async getRealGPSLocation(): Promise<GeocodingResult | null> {
+    try {
+      console.log('SOS Service: Getting REAL GPS location...');
+      
+      // Check if permissions are already granted
+      const hasPermission = await this.checkLocationPermissions();
+      
+      if (!hasPermission) {
+        // Request permissions if not granted
+        const permissionGranted = await this.requestLocationPermissions();
+        if (!permissionGranted) {
+          console.error('SOS Service: Location permission denied');
+          return null;
         }
       }
 
-      // Use React Native's built-in Geolocation API
-      const { Geolocation } = require('@react-native-community/geolocation');
-      
-      // Get current position with timeout
-      return new Promise((resolve, reject) => {
-        if (!Geolocation || !Geolocation.getCurrentPosition) {
-          console.warn('SOS Service: Geolocation not available, using fallback');
-          resolve(this.getFallbackLocation());
-          return;
-        }
-
+      // First, capture location coordinates quickly
+      const locationPromise = new Promise<{latitude: number, longitude: number}>((resolve, reject) => {
         Geolocation.getCurrentPosition(
           (position) => {
-            const { latitude, longitude } = position.coords;
-            console.log('SOS Service: GPS location obtained:', { latitude, longitude });
-            resolve({ latitude, longitude });
+            const { latitude, longitude, accuracy } = position.coords;
+            console.log('SOS Service: Location captured - Lat:', latitude, 'Lng:', longitude, 'Accuracy:', `${accuracy}m`);
+            
+            // Accept coordinates with reasonable accuracy
+            if (accuracy <= 200) {
+              console.log(`SOS Service: Accepting coordinates with ${accuracy}m accuracy`);
+              resolve({ latitude, longitude });
+            } else {
+              console.log(`SOS Service: Accuracy ${accuracy}m too poor, rejecting coordinates`);
+              reject(new Error(`GPS accuracy too poor: ${accuracy}m`));
+            }
           },
           (error) => {
-            console.warn('SOS Service: Failed to get GPS location:', error);
-            resolve(this.getFallbackLocation());
+            console.log('SOS Service: Location error:', error);
+            
+            let errorMessage = 'Unable to get your current location.';
+            
+            // Provide specific error messages based on error code
+            switch (error.code) {
+              case 1: // PERMISSION_DENIED
+                errorMessage = 'Location permission denied. Please enable location access in settings.';
+                break;
+              case 2: // POSITION_UNAVAILABLE
+                errorMessage = 'Location is currently unavailable. Please try again.';
+                break;
+              case 3: // TIMEOUT
+                errorMessage = 'Location request timed out. Please try again.';
+                break;
+              default:
+                errorMessage = 'Unable to get your current location. Please try again.';
+            }
+            
+            console.error('SOS Service: GPS Error:', errorMessage);
+            reject(error);
           },
           {
-            enableHighAccuracy: true,
-            timeout: 10000, // 10 seconds timeout
-            maximumAge: 60000, // Accept location up to 1 minute old
+            enableHighAccuracy: false, // Faster capture
+            timeout: 8000, // Reduced timeout for faster capture
+            maximumAge: 30000 // Accept cached location up to 30 seconds old
           }
         );
       });
-      */
+
+      // Wait for location with reduced timeout
+      const coordinates = await Promise.race([
+        locationPromise,
+        new Promise<{latitude: number, longitude: number}>((_, reject) => 
+          setTimeout(() => reject(new Error('Location timeout')), 8000)
+        )
+      ]);
+
+      console.log('SOS Service: Location captured successfully:', coordinates);
+
+      // Now do reverse geocoding with improved service
+      console.log('SOS Service: Starting reverse geocoding...');
+      const geocodingResult = await GeocodingService.reverseGeocode(
+        coordinates.latitude, 
+        coordinates.longitude
+      );
+
+      console.log('SOS Service: Geocoding completed:', geocodingResult);
+      return geocodingResult;
+
     } catch (error) {
-      console.warn('SOS Service: Location error, using fallback:', error);
-      return this.getFallbackLocation();
+      console.error('SOS Service: GPS error:', error);
+      return null;
     }
   }
 
   /**
-   * Get fallback location (Manila area) when GPS is unavailable
+   * Test GPS location (for debugging)
    */
-  private getFallbackLocation(): { latitude: number; longitude: number } {
-    console.log('SOS Service: Using fallback location');
-    return {
-      latitude: 14.5995 + (Math.random() - 0.5) * 0.01, // Manila area
-      longitude: 120.9842 + (Math.random() - 0.5) * 0.01
-    };
+  async testGPSLocation(): Promise<GeocodingResult | null> {
+    return await this.getRealGPSLocation();
   }
 
   /**

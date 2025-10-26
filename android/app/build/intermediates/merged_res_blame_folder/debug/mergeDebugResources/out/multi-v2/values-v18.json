@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.eresponde.smartwatch.app-mergeDebugResources-27:/values-v18/values-v18.xml",
+            "outputFile": "com.eresponde.smartwatch.app-mergeDebugResources-2:/values-v18/values-v18.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Miked\\.gradle\\caches\\8.11.1\\transforms\\46a5cc3808aff1d8ce4a7c72ee5cd244\\transformed\\appcompat-1.7.0\\res\\values-v18\\values-v18.xml",
+                    "source": "C:\\Users\\ASUS\\.gradle\\caches\\8.11.1\\transforms\\46a5cc3808aff1d8ce4a7c72ee5cd244\\transformed\\appcompat-1.7.0\\res\\values-v18\\values-v18.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
