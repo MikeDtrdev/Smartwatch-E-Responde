@@ -14,6 +14,7 @@ import SOSService from '../../services/sosService';
 import ProximitySOSService from '../../services/proximitySOSService';
 import ShakeSOSService from '../../services/shakeSOSService';
 import PairingService from '../../services/pairingService';
+import TheftDetectionService from '../../services/theftDetectionService';
 import { createStyles } from './styles';
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,8 @@ const MinimalDashboard: FC = () => {
   const [deviceStatus, setDeviceStatus] = useState('Initializing...');
   const [showSOSInfo, setShowSOSInfo] = useState(false);
   const [isShakeSOSEnabled, setIsShakeSOSEnabled] = useState(false);
+  const [isTheftDetectionEnabled, setIsTheftDetectionEnabled] = useState(false);
+  const [theftDetectionStatus, setTheftDetectionStatus] = useState('Disabled');
 
   const styles = createStyles();
 
@@ -54,6 +57,11 @@ const MinimalDashboard: FC = () => {
           ShakeSOSService.stopMonitoring();
           setIsShakeSOSEnabled(false);
           
+          // Ensure theft detection is OFF by default
+          TheftDetectionService.stopTheftDetection();
+          setIsTheftDetectionEnabled(false);
+          setTheftDetectionStatus('Disabled');
+          
           // Update proximity status periodically
           const proximityInterval = setInterval(() => {
             try {
@@ -77,12 +85,24 @@ const MinimalDashboard: FC = () => {
             }
           }, 1000);
 
+          // Update theft detection status
+          const theftInterval = setInterval(() => {
+            try {
+              const isActive = TheftDetectionService.isMonitoringActive();
+              setTheftDetectionStatus(isActive ? 'Active' : 'Disabled');
+            } catch (error) {
+              console.warn('Minimal Dashboard: Error updating theft detection status:', error);
+            }
+          }, 2000);
+
           return () => {
             clearInterval(proximityInterval);
             clearInterval(shakeInterval);
+            clearInterval(theftInterval);
             try {
               ProximitySOSService.stopMonitoring();
               ShakeSOSService.stopMonitoring();
+              TheftDetectionService.stopTheftDetection();
             } catch (error) {
               console.warn('Minimal Dashboard: Error stopping services:', error);
             }
@@ -185,6 +205,34 @@ const MinimalDashboard: FC = () => {
     }
   };
 
+  const toggleTheftDetection = async () => {
+    if (isTheftDetectionEnabled) {
+      // Disable theft detection
+      TheftDetectionService.stopTheftDetection();
+      setIsTheftDetectionEnabled(false);
+      setTheftDetectionStatus('Disabled');
+      console.log('Theft Detection: Disabled');
+    } else {
+      // Enable theft detection
+      if (user?.uid) {
+        try {
+          // Generate device ID for this smartwatch
+          const deviceId = `watch_${user.uid.substring(0, 8)}_${Date.now()}`;
+          
+          await TheftDetectionService.startTheftDetection(user.uid, deviceId);
+          setIsTheftDetectionEnabled(true);
+          setTheftDetectionStatus('Active');
+          console.log('Theft Detection: Enabled with device ID:', deviceId);
+        } catch (error) {
+          console.error('Theft Detection: Failed to enable:', error);
+          Alert.alert('Error', 'Failed to enable theft detection. Please check location permissions.');
+        }
+      } else {
+        Alert.alert('Error', 'User not authenticated');
+      }
+    }
+  };
+
 
   if (error) {
     return (
@@ -219,6 +267,7 @@ const MinimalDashboard: FC = () => {
             <Text style={styles.statusText}>Status: {proximityStatus}</Text>
             <Text style={styles.statusText}>Shake Count: {shakeCount}/3</Text>
             <Text style={styles.statusText}>Paired: {isPaired ? 'Yes' : 'No'}</Text>
+            <Text style={styles.statusText}>Theft Detection: {theftDetectionStatus}</Text>
           </View>
           <TouchableOpacity
             style={styles.infoButton}
@@ -276,6 +325,24 @@ const MinimalDashboard: FC = () => {
         </View>
       </TouchableOpacity>
 
+      {/* Theft Detection Toggle */}
+      <TouchableOpacity
+        style={[styles.shakeToggleButton, isTheftDetectionEnabled && styles.shakeToggleButtonActive]}
+        onPress={toggleTheftDetection}
+      >
+        <View style={styles.toggleContainer}>
+          <View style={[styles.toggleSwitch, isTheftDetectionEnabled && styles.toggleSwitchActive]}>
+            <View style={[styles.toggleThumb, isTheftDetectionEnabled && styles.toggleThumbActive]} />
+          </View>
+          <View style={styles.toggleContent}>
+            <Text style={styles.shakeToggleText}>Theft Detection</Text>
+            <Text style={styles.shakeToggleSubtext}>
+              {isTheftDetectionEnabled ? 'Auto-SOS when phone >5m away' : 'Tap to enable theft detection'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
       {/* Logout Button */}
       <TouchableOpacity
         style={styles.logoutButton}
@@ -319,6 +386,11 @@ const MinimalDashboard: FC = () => {
                 • Toggle ON: Shake detection active - shake 3x to trigger SOS{'\n'}
                 • Toggle OFF: Shake detection disabled - no accidental triggers{'\n'}
                 • Default: OFF when you log in - enable manually when needed
+              </Text>
+              
+              <Text style={styles.featureTitle}>Theft Detection</Text>
+              <Text style={styles.featureDescription}>
+                Automatic theft report when your smartphone is taken more than 5 meters away from your smartwatch. Creates a crime report with GPS coordinates and sends SOS alert to authorities.
               </Text>
               
               <Text style={styles.featureTitle}>Proximity Alert</Text>
