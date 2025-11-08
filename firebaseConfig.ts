@@ -48,11 +48,20 @@ try {
         
         database = getDatabase(app);
         storage = getStorage(app);
-        console.log('Smartwatch Firebase: Database and storage initialized');
+        console.log('Smartwatch Firebase: ✅ Database and storage initialized successfully');
+        console.log('Smartwatch Firebase: Database URL:', database.app.options.databaseURL);
+    } else {
+        console.error('Smartwatch Firebase: ❌ App not initialized, cannot initialize database');
     }
-} catch (error) {
-    console.warn('Smartwatch Firebase: Database/storage initialization failed:', error);
+} catch (error: any) {
+    console.error('Smartwatch Firebase: ❌ Database/storage initialization failed:', error);
+    console.error('Smartwatch Firebase: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack
+    });
     // Continue without database/storage for minimal functionality
+    // But log error so user knows
 }
 
 export { database, storage };

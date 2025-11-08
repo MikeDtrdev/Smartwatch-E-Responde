@@ -8,7 +8,7 @@ import { GeocodingService, GeocodingResult } from './geocodingService';
 export interface SOSAlert {
   id: string;
   timestamp: number;
-  type: 'manual' | 'proximity' | 'shake';
+  type: 'manual' | 'proximity' | 'shake' | 'theft';
   location?: {
     latitude: number;
     longitude: number;
@@ -21,6 +21,26 @@ export interface SOSAlert {
   userId: string;
 }
 
+export interface TheftReportData {
+  crimeType: string;
+  description: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  severity: string;
+  createdAt: string;
+  timestamp: number;
+  isTheftDetection: boolean;
+  theftDetails: {
+    distance: number;
+    phoneLocation: { latitude: number; longitude: number; timestamp: number };
+    watchLocation: { latitude: number; longitude: number };
+    detectionTime: string;
+  };
+}
+
 class SOSService {
   private isActive = false;
   private lastSOSTime = 0;
@@ -29,7 +49,7 @@ class SOSService {
   /**
    * Send SOS alert with vibration and notification
    */
-  async sendSOSAlert(type: 'manual' | 'proximity' | 'shake', userId: string, location?: { latitude: number; longitude: number }) {
+  async sendSOSAlert(type: 'manual' | 'proximity' | 'shake' | 'theft', userId: string, location?: { latitude: number; longitude: number }) {
     // Safety check: Only allow SOS if explicitly triggered
     if (!type || !userId) {
       console.log('SOS Service: Invalid SOS request - missing type or userId');
@@ -101,7 +121,7 @@ class SOSService {
   /**
    * Get appropriate SOS message based on trigger type
    */
-  private getSOSMessage(type: 'manual' | 'proximity' | 'shake'): string {
+  private getSOSMessage(type: 'manual' | 'proximity' | 'shake' | 'theft'): string {
     switch (type) {
       case 'manual':
         return 'SOS Alert - User pressed SOS button';
@@ -109,6 +129,8 @@ class SOSService {
         return 'Proximity SOS Alert - Smartwatch disconnected from phone (>5m)';
       case 'shake':
         return 'Shake SOS Alert - User shook smartwatch 3 times';
+      case 'theft':
+        return 'Theft Detection Alert - Smartphone taken away from smartwatch';
       default:
         return 'SOS Alert triggered';
     }
@@ -130,7 +152,7 @@ class SOSService {
   /**
    * Show SOS alert dialog
    */
-  private showSOSAlert(type: 'manual' | 'proximity' | 'shake') {
+  private showSOSAlert(type: 'manual' | 'proximity' | 'shake' | 'theft') {
     const title = 'SOS ALERT SENT';
     const message = 'Your emergency alert has been sent successfully with your current location.';
     
@@ -321,6 +343,106 @@ class SOSService {
    */
   async testGPSLocation(): Promise<GeocodingResult | null> {
     return await this.getRealGPSLocation();
+  }
+
+  /**
+   * Send theft-specific SOS alert with crime report
+   */
+  async sendTheftSOSAlert(userId: string, theftReportData: TheftReportData): Promise<void> {
+    try {
+      console.log('SOS Service: Sending theft SOS alert for user:', userId);
+      
+      const now = Date.now();
+      
+      // Check cooldown to prevent spam
+      if (now - this.lastSOSTime < this.SOS_COOLDOWN) {
+        console.log('SOS Service: Theft alert blocked due to cooldown');
+        return;
+      }
+
+      this.lastSOSTime = now;
+      this.isActive = true;
+
+      // Create theft SOS alert
+      const theftSOSAlert: SOSAlert = {
+        id: `theft_sos_${now}`,
+        timestamp: now,
+        type: 'theft',
+        location: theftReportData.location,
+        message: theftReportData.description,
+        userId
+      };
+
+      // Vibrate device with theft-specific pattern
+      this.vibrateDevice();
+
+      // Show theft alert
+      this.showTheftAlert();
+
+      // Save theft report to civilian crime reports
+      await this.saveTheftReport(userId, theftReportData);
+
+      // Save SOS alert to database
+      await this.saveSOSAlert(theftSOSAlert);
+
+      // Send notification to paired mobile app
+      await PairingService.sendSOSToMobile(theftSOSAlert);
+
+      console.log('SOS Service: Theft SOS alert sent successfully');
+    } catch (error) {
+      console.error('SOS Service: Failed to send theft SOS alert:', error);
+    } finally {
+      this.isActive = false;
+    }
+  }
+
+  /**
+   * Save theft report to civilian crime reports database
+   */
+  private async saveTheftReport(userId: string, theftReportData: TheftReportData): Promise<void> {
+    try {
+      if (!database) {
+        console.warn('SOS Service: Database not available for theft report');
+        return;
+      }
+
+      const reportId = theftReportData.timestamp.toString();
+      
+      // Save to civilian crime reports (main collection)
+      const civilianReportsRef = ref(database, `civilian/civilian crime reports/${reportId}`);
+      await set(civilianReportsRef, theftReportData);
+      
+      // Save to user's personal crime reports
+      const userReportsRef = ref(database, `civilian/civilian account/${userId}/crime reports/${reportId}`);
+      await set(userReportsRef, theftReportData);
+      
+      console.log('SOS Service: Theft report saved to database with ID:', reportId);
+    } catch (error) {
+      console.error('SOS Service: Failed to save theft report:', error);
+    }
+  }
+
+  /**
+   * Show theft-specific alert dialog
+   */
+  private showTheftAlert(): void {
+    const title = 'THEFT DETECTED';
+    const message = 'Your smartphone has been taken away! A theft report has been automatically sent to authorities with your current location.';
+    
+    Alert.alert(
+      title,
+      message,
+      [
+        {
+          text: 'OK',
+          style: 'default',
+          onPress: () => {
+            this.isActive = false;
+          }
+        }
+      ],
+      { cancelable: false }
+    );
   }
 
   /**
