@@ -35,16 +35,22 @@ class TheftDetectionService {
       this.userId = userId;
       this.deviceId = deviceId;
       
-      // Initialize location tracking
-      await LocationTrackingService.initializeTracking(userId, deviceId);
+      // Initialize location tracking (don't wait - let it initialize in background)
+      // Even if GPS fails initially, tracking will retry automatically
+      LocationTrackingService.initializeTracking(userId, deviceId).catch((error) => {
+        console.warn('TheftDetectionService: Location tracking initialization had issues, but continuing:', error);
+        console.warn('TheftDetectionService: GPS will retry automatically in the background');
+      });
       
-      // Start distance monitoring
+      // Start distance monitoring (this will keep running even if GPS fails initially)
       this.startDistanceMonitoring();
       
       console.log('TheftDetectionService: Theft detection started successfully');
+      console.log('TheftDetectionService: Note: GPS may take time to get initial fix. Monitoring will continue.');
     } catch (error) {
       console.error('TheftDetectionService: Failed to start theft detection:', error);
-      throw error;
+      // Don't throw - let it continue even if there are issues
+      console.warn('TheftDetectionService: Continuing despite error, will retry in background');
     }
   }
 
@@ -114,9 +120,9 @@ class TheftDetectionService {
 
       console.log('TheftDetectionService: Distance calculated:', distance.toFixed(2), 'meters');
 
-      // Check if distance exceeds threshold
-      if (distance > this.config.distanceThreshold) {
-        console.log('TheftDetectionService: Distance exceeds threshold! Triggering theft detection...');
+      // Check if distance is 5m or greater (>= 5m)
+      if (distance >= this.config.distanceThreshold) {
+        console.log('TheftDetectionService: Distance is 5m or greater! Triggering theft detection...');
         await this.triggerTheftSOS(distance, phoneLocation, watchLocation);
       } else {
         console.log('TheftDetectionService: Distance within safe range');
@@ -128,31 +134,33 @@ class TheftDetectionService {
   }
 
   /**
-   * Get current watch location
+   * Get current watch location from Firebase
    */
   private async getCurrentWatchLocation(): Promise<{ latitude: number; longitude: number } | null> {
     try {
-      return new Promise((resolve) => {
-        const Geolocation = require('react-native-geolocation-service');
-        
-        Geolocation.getCurrentPosition(
-          (position: any) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-          },
-          (error: any) => {
-            console.error('TheftDetectionService: Error getting watch location:', error);
-            resolve(null);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 10000
-          }
-        );
-      });
+      if (!this.userId || !database) {
+        console.log('TheftDetectionService: User ID not set or database not available');
+        return null;
+      }
+
+      const watchLatitudeRef = ref(database, `device_locations/${this.userId}/smartwatch/latitude`);
+      const watchLongitudeRef = ref(database, `device_locations/${this.userId}/smartwatch/longitude`);
+      
+      const latitudeSnapshot = await get(watchLatitudeRef);
+      const longitudeSnapshot = await get(watchLongitudeRef);
+      
+      if (latitudeSnapshot.exists() && longitudeSnapshot.exists()) {
+        const latitude = latitudeSnapshot.val();
+        const longitude = longitudeSnapshot.val();
+        console.log('TheftDetectionService: Watch location retrieved from Firebase:', { latitude, longitude });
+        return {
+          latitude,
+          longitude
+        };
+      } else {
+        console.log('TheftDetectionService: Watch location not found in Firebase');
+        return null;
+      }
     } catch (error) {
       console.error('TheftDetectionService: Error getting watch location:', error);
       return null;

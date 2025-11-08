@@ -1,5 +1,5 @@
 import { getDatabase, ref, set, get } from 'firebase/database';
-import Geolocation from 'react-native-geolocation-service';
+import Geolocation from '@react-native-community/geolocation';
 import { Platform, PermissionsAndroid, Alert } from 'react-native';
 import { database } from '../firebaseConfig';
 
@@ -31,23 +31,37 @@ class LocationTrackingService {
    */
   async initializeTracking(userId: string, deviceId: string): Promise<void> {
     try {
-      console.log('LocationTrackingService: Initializing tracking for user:', userId, 'device:', deviceId);
+      console.log('LocationTrackingService: ============================================');
+      console.log('LocationTrackingService: Initializing tracking for user:', userId);
+      console.log('LocationTrackingService: Device ID:', deviceId);
+      console.log('LocationTrackingService: ============================================');
       
       this.userId = userId;
       this.deviceId = deviceId;
       
       // Request location permissions
+      console.log('LocationTrackingService: Requesting location permissions...');
       const hasPermission = await this.requestLocationPermission();
       if (!hasPermission) {
-        throw new Error('Location permission denied');
+        console.error('LocationTrackingService: ❌ Location permission denied');
+        throw new Error('Location permission denied. Please enable location access in settings.');
       }
+      console.log('LocationTrackingService: ✅ Location permission granted');
 
       // Start location tracking
+      console.log('LocationTrackingService: Starting location tracking...');
       await this.startLocationTracking();
       
-      console.log('LocationTrackingService: Tracking initialized successfully');
-    } catch (error) {
-      console.error('LocationTrackingService: Failed to initialize tracking:', error);
+      console.log('LocationTrackingService: ✅ Tracking initialized successfully');
+      console.log('LocationTrackingService: Device ID:', this.deviceId);
+      console.log('LocationTrackingService: Firebase path will be: device_locations/' + this.userId + '/smartwatch');
+    } catch (error: any) {
+      console.error('LocationTrackingService: ❌ Failed to initialize tracking:', error);
+      console.error('LocationTrackingService: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack
+      });
       throw error;
     }
   }
@@ -96,9 +110,16 @@ class LocationTrackingService {
 
       this.isTracking = true;
       console.log('LocationTrackingService: Starting location tracking every', this.updateIntervalMs, 'ms');
+      console.log('LocationTrackingService: Device ID:', this.deviceId);
+      console.log('LocationTrackingService: User ID:', this.userId);
+      console.log('LocationTrackingService: Database:', database ? 'Connected' : 'Not connected');
 
-      // Initial location update
-      await this.updateLocation();
+      // Initial location update (don't wait for it to complete - let it run in background)
+      console.log('LocationTrackingService: Performing initial location update...');
+      this.updateLocation().catch((error) => {
+        console.error('LocationTrackingService: Initial location update failed, but continuing tracking:', error);
+      });
+      console.log('LocationTrackingService: Location tracking interval starting (initial update may still be in progress)');
 
       // Set up interval for continuous updates
       this.locationUpdateInterval = setInterval(async () => {
@@ -122,10 +143,13 @@ class LocationTrackingService {
     try {
       if (!this.deviceId || !this.userId) {
         console.log('LocationTrackingService: Device ID or User ID not set, skipping location update');
+        console.log('LocationTrackingService: Device ID:', this.deviceId, 'User ID:', this.userId);
         return;
       }
 
       console.log('LocationTrackingService: Getting current location...');
+      console.log('LocationTrackingService: Device ID:', this.deviceId);
+      console.log('LocationTrackingService: User ID:', this.userId);
       
       const position = await this.getCurrentPosition();
       
@@ -135,18 +159,46 @@ class LocationTrackingService {
         timestamp: Date.now()
       };
 
-      // Update location in Firebase
-      const locationRef = ref(database, `device_locations/${this.deviceId}`);
-      await set(locationRef, locationData);
+      console.log('LocationTrackingService: Location data prepared:', locationData);
+      console.log('LocationTrackingService: Writing to Firebase path: device_locations/' + this.userId + '/smartwatch');
+
+      // Check if database is available
+      if (!database) {
+        console.error('LocationTrackingService: ❌ Database is not initialized!');
+        throw new Error('Firebase database is not initialized. Please check Firebase configuration.');
+      }
+
+      console.log('LocationTrackingService: Database is available, proceeding with write...');
+
+      // Update location in Firebase - write longitude and latitude separately
+      const longitudeRef = ref(database, `device_locations/${this.userId}/smartwatch/longitude`);
+      const latitudeRef = ref(database, `device_locations/${this.userId}/smartwatch/latitude`);
+      console.log('LocationTrackingService: Firebase references created:', {
+        longitude: longitudeRef.toString(),
+        latitude: latitudeRef.toString()
+      });
       
-      console.log('LocationTrackingService: Location updated successfully:', {
+      await set(longitudeRef, locationData.longitude);
+      await set(latitudeRef, locationData.latitude);
+      console.log('LocationTrackingService: Firebase set() call completed');
+      
+      console.log('LocationTrackingService: ✅ Location updated successfully in Firebase:', {
         latitude: locationData.latitude,
         longitude: locationData.longitude,
-        timestamp: new Date(locationData.timestamp).toISOString()
+        timestamp: new Date(locationData.timestamp).toISOString(),
+        userId: this.userId,
+        path: `device_locations/${this.userId}/smartwatch`
       });
 
-    } catch (error) {
-      console.error('LocationTrackingService: Failed to update location:', error);
+    } catch (error: any) {
+      console.error('LocationTrackingService: ❌ Failed to update location:', error);
+      console.error('LocationTrackingService: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack,
+        deviceId: this.deviceId,
+        userId: this.userId
+      });
       // Don't throw error to prevent stopping the tracking interval
     }
   }
@@ -154,27 +206,89 @@ class LocationTrackingService {
   /**
    * Get current GPS position
    */
-  private getCurrentPosition(): Promise<Geolocation.GeoPosition> {
+  private getCurrentPosition(): Promise<any> {
     return new Promise((resolve, reject) => {
+      console.log('LocationTrackingService: Requesting GPS location...');
+      console.log('LocationTrackingService: Geolocation module:', Geolocation ? 'Available' : 'NULL');
+      
+      if (!Geolocation) {
+        console.error('LocationTrackingService: ❌ Geolocation module is null!');
+        reject(new Error('Geolocation module is not available. Please check if @react-native-community/geolocation is properly installed and linked.'));
+        return;
+      }
+      
+      if (!Geolocation.getCurrentPosition) {
+        console.error('LocationTrackingService: ❌ getCurrentPosition method is not available!');
+        reject(new Error('getCurrentPosition method is not available on Geolocation module.'));
+        return;
+      }
+      
+      console.log('LocationTrackingService: GPS options:', {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+      });
+      
+      // First try with high accuracy, but if it fails, retry with lower accuracy
       Geolocation.getCurrentPosition(
         (position) => {
-          console.log('LocationTrackingService: GPS position obtained:', {
+          console.log('LocationTrackingService: ✅ GPS position obtained:', {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
+            accuracy: position.coords.accuracy,
+            altitude: position.coords.altitude,
+            heading: position.coords.heading,
+            speed: position.coords.speed
           });
           resolve(position);
         },
         (error) => {
-          console.error('LocationTrackingService: GPS error:', error);
-          reject(new Error(`GPS Error: ${error.message}`));
+          console.warn('LocationTrackingService: ⚠️ High accuracy GPS failed, trying with lower accuracy...', error);
+          console.warn('LocationTrackingService: GPS error code:', error.code);
+          console.warn('LocationTrackingService: GPS error message:', error.message);
+          
+          // Retry with lower accuracy and longer timeout for smartwatch
+          Geolocation.getCurrentPosition(
+            (position) => {
+              console.log('LocationTrackingService: ✅ GPS position obtained (lower accuracy):', {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+              });
+              resolve(position);
+            },
+            (retryError) => {
+              console.error('LocationTrackingService: ❌ GPS error (retry also failed):', retryError);
+              console.error('LocationTrackingService: GPS error code:', retryError.code);
+              console.error('LocationTrackingService: GPS error message:', retryError.message);
+              
+              // Provide detailed error information
+              let errorMessage = `GPS Error: ${retryError.message}`;
+              if (retryError.code === 1) {
+                errorMessage = 'GPS Error: Permission denied. Please enable location permissions.';
+              } else if (retryError.code === 2) {
+                errorMessage = 'GPS Error: Position unavailable. Please check GPS signal.';
+              } else if (retryError.code === 3) {
+                errorMessage = 'GPS Error: Request timeout. GPS may not be available. Please ensure you are outdoors or have GPS signal.';
+              }
+              
+              reject(new Error(errorMessage));
+            },
+            {
+              enableHighAccuracy: false, // Lower accuracy for smartwatch
+              timeout: 20000, // Longer timeout for smartwatch (20 seconds)
+              maximumAge: 30000, // Accept cached location up to 30 seconds old
+              showLocationDialog: true,
+              forceRequestLocation: false, // Don't force if cached available
+            }
+          );
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5000,
+          timeout: 15000, // First attempt with high accuracy
+          maximumAge: 10000, // Accept cached location up to 10 seconds old
           showLocationDialog: true,
-          forceRequestLocation: true,
+          forceRequestLocation: false, // Don't force if cached available
         }
       );
     });
@@ -185,21 +299,25 @@ class LocationTrackingService {
    */
   async getPhoneLocation(): Promise<DeviceLocation | null> {
     try {
-      if (!database) {
-        console.log('LocationTrackingService: Database not available');
+      if (!database || !this.userId) {
+        console.log('LocationTrackingService: Database not available or User ID not set');
         return null;
       }
 
-      const phoneLocationRef = ref(database, 'device_locations/phone');
-      const snapshot = await get(phoneLocationRef);
+      const phoneLatitudeRef = ref(database, `device_locations/${this.userId}/phone/latitude`);
+      const phoneLongitudeRef = ref(database, `device_locations/${this.userId}/phone/longitude`);
       
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        console.log('LocationTrackingService: Phone location retrieved:', data);
+      const latitudeSnapshot = await get(phoneLatitudeRef);
+      const longitudeSnapshot = await get(phoneLongitudeRef);
+      
+      if (latitudeSnapshot.exists() && longitudeSnapshot.exists()) {
+        const latitude = latitudeSnapshot.val();
+        const longitude = longitudeSnapshot.val();
+        console.log('LocationTrackingService: Phone location retrieved:', { latitude, longitude });
         return {
-          latitude: data.latitude,
-          longitude: data.longitude,
-          timestamp: data.timestamp
+          latitude,
+          longitude,
+          timestamp: Date.now() // Use current timestamp since we're not storing it separately
         };
       } else {
         console.log('LocationTrackingService: Phone location not found');
