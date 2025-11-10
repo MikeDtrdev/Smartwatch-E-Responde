@@ -1,7 +1,7 @@
 import { Alert, Vibration, Platform, PermissionsAndroid } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { database } from '../firebaseConfig';
-import { ref, push, set } from 'firebase/database';
+import { ref, set } from 'firebase/database';
 import PairingService from './pairingService';
 import { GeocodingService, GeocodingResult } from './geocodingService';
 
@@ -39,7 +39,48 @@ export interface TheftReportData {
     watchLocation: { latitude: number; longitude: number };
     detectionTime: string;
   };
+  reporterName?: string;
+  reporterUid?: string;
+  barangay?: string;
+  anonymous?: boolean;
+  multimedia?: string[];
+  videos?: string[];
+  status?: string;
+  createdVia?: string;
+  upvotes?: number;
+  downvotes?: number;
+  userVotes?: Record<string, 'upvote' | 'downvote'>;
+  triggerSource?: string;
 }
+
+type CrimeReportPayload = {
+  crimeType: string;
+  dateTime: string;
+  description: string;
+  multimedia: string[];
+  videos: string[];
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  barangay: string;
+  anonymous: boolean;
+  reporterName: string;
+  reporterUid: string;
+  status: string;
+  createdAt: string;
+  reportId: string;
+  severity: 'Immediate' | 'High' | 'Moderate' | 'Low';
+  upvotes: number;
+  downvotes: number;
+  userVotes: Record<string, 'upvote' | 'downvote'>;
+  triggerSource: string;
+  timestamp: number;
+  createdVia: string;
+  isTheftDetection?: boolean;
+  theftDetails?: TheftReportData['theftDetails'];
+};
 
 class SOSService {
   private isActive = false;
@@ -104,10 +145,10 @@ class SOSService {
       this.showSOSAlert(type);
 
       // Save to Firebase database
-      await this.saveSOSAlert(sosAlert);
+      const storedAlert = await this.saveSOSAlert(sosAlert);
 
       // Send notification to paired mobile app
-      await PairingService.sendSOSToMobile(sosAlert);
+      await PairingService.sendSOSToMobile(storedAlert ?? sosAlert);
 
       console.log('SOS Service: Alert sent successfully with REAL GPS coordinates', sosAlert);
     } catch (error) {
@@ -175,21 +216,154 @@ class SOSService {
   /**
    * Save SOS alert to Firebase database
    */
-  private async saveSOSAlert(sosAlert: SOSAlert) {
+  private async saveSOSAlert(
+    sosAlert: SOSAlert,
+    options?: {
+      crimeReportOverrides?: Partial<CrimeReportPayload>;
+      persistCrimeReport?: boolean;
+    }
+  ): Promise<
+    (SOSAlert & {
+      status: 'active' | 'responded' | 'resolved';
+      sentAt: string;
+      triggerSource: string;
+      reportId: string;
+    }) | null
+  > {
     try {
       if (!database) {
         console.warn('SOS Service: Database not available');
-        return;
+        return null;
       }
 
-      const sosRef = ref(database, 'sos_alerts');
-      const newSOSRef = push(sosRef);
-      await set(newSOSRef, sosAlert);
-      
-      console.log('SOS Service: Alert saved to database');
+      const reportId = sosAlert.timestamp.toString();
+      const sentAt = new Date(sosAlert.timestamp).toISOString();
+      const alertPayload = {
+        ...sosAlert,
+        status: 'active' as const,
+        sentAt,
+        triggerSource: `smartwatch_${sosAlert.type}`,
+        reportId,
+      };
+
+      if (options?.persistCrimeReport !== false) {
+        const crimeReportPayload = this.buildCrimeReportPayload(
+          sosAlert,
+          reportId,
+          options?.crimeReportOverrides
+        );
+        await this.persistCrimeReport(sosAlert.userId, reportId, crimeReportPayload);
+      }
+
+      console.log('SOS Service: SOS alert processed with report ID:', reportId);
+      return alertPayload;
     } catch (error) {
       console.error('SOS Service: Failed to save alert to database:', error);
+      return null;
     }
+  }
+
+  private getCrimeTypeForSOS(type: SOSAlert['type']): string {
+    switch (type) {
+      case 'theft':
+        return 'Theft';
+      case 'proximity':
+        return 'Proximity SOS Alert';
+      case 'shake':
+        return 'Shake SOS Alert';
+      case 'manual':
+      default:
+        return 'Emergency SOS Alert';
+    }
+  }
+
+  private buildCrimeReportPayload(
+    sosAlert: SOSAlert,
+    reportId: string,
+    overrides?: Partial<CrimeReportPayload>
+  ): CrimeReportPayload {
+    const timestampIso = new Date(sosAlert.timestamp).toISOString();
+    const baseLocation = sosAlert.location
+      ? {
+          latitude: sosAlert.location.latitude,
+          longitude: sosAlert.location.longitude,
+          address:
+            sosAlert.location.address ??
+            `${sosAlert.location.latitude}, ${sosAlert.location.longitude}`,
+        }
+      : {
+          latitude: 0,
+          longitude: 0,
+          address: 'Location unavailable',
+        };
+
+    const basePayload: CrimeReportPayload = {
+      crimeType: this.getCrimeTypeForSOS(sosAlert.type),
+      dateTime: timestampIso,
+      description: sosAlert.message,
+      multimedia: [],
+      videos: [],
+      location: baseLocation,
+      barangay: sosAlert.location?.city ?? 'Unknown',
+      anonymous: false,
+      reporterName: 'Smartwatch SOS User',
+      reporterUid: sosAlert.userId,
+      status: 'pending',
+      createdAt: timestampIso,
+      reportId,
+      severity: 'Immediate',
+      upvotes: 0,
+      downvotes: 0,
+      userVotes: {},
+      triggerSource: `smartwatch_${sosAlert.type}`,
+      timestamp: sosAlert.timestamp,
+      createdVia: `smartwatch_${sosAlert.type}_sos`,
+    };
+
+    const mergedPayload: CrimeReportPayload = {
+      ...basePayload,
+      ...overrides,
+      location: {
+        ...basePayload.location,
+        ...(overrides?.location ?? {}),
+      },
+      multimedia: overrides?.multimedia ?? basePayload.multimedia,
+      videos: overrides?.videos ?? basePayload.videos,
+      reporterName: overrides?.reporterName ?? basePayload.reporterName,
+      reporterUid: overrides?.reporterUid ?? basePayload.reporterUid,
+      status: overrides?.status ?? basePayload.status,
+      severity: (overrides?.severity as CrimeReportPayload['severity']) ?? basePayload.severity,
+      barangay: overrides?.barangay ?? basePayload.barangay,
+      triggerSource: overrides?.triggerSource ?? basePayload.triggerSource,
+      createdVia: overrides?.createdVia ?? basePayload.createdVia,
+      anonymous: overrides?.anonymous ?? basePayload.anonymous,
+      upvotes: overrides?.upvotes ?? basePayload.upvotes,
+      downvotes: overrides?.downvotes ?? basePayload.downvotes,
+      userVotes: overrides?.userVotes ?? basePayload.userVotes,
+      crimeType: overrides?.crimeType ?? basePayload.crimeType,
+      description: overrides?.description ?? basePayload.description,
+      dateTime: overrides?.dateTime ?? basePayload.dateTime,
+      createdAt: overrides?.createdAt ?? basePayload.createdAt,
+      timestamp: overrides?.timestamp ?? basePayload.timestamp,
+    };
+
+    if (overrides?.isTheftDetection !== undefined) {
+      mergedPayload.isTheftDetection = overrides.isTheftDetection;
+    }
+
+    if (overrides?.theftDetails) {
+      mergedPayload.theftDetails = overrides.theftDetails;
+    }
+
+    return mergedPayload;
+  }
+
+  private async persistCrimeReport(userId: string, reportId: string, payload: CrimeReportPayload) {
+    const globalRef = ref(database, `civilian/civilian crime reports/${reportId}`);
+    const userRef = ref(database, `civilian/civilian account/${userId}/crime reports/${reportId}`);
+
+    await Promise.all([set(globalRef, payload), set(userRef, payload)]);
+    console.log('SOS Service: Crime report saved at report ID:', reportId);
   }
 
   /**
@@ -383,10 +557,12 @@ class SOSService {
       await this.saveTheftReport(userId, theftReportData);
 
       // Save SOS alert to database
-      await this.saveSOSAlert(theftSOSAlert);
+      const storedAlert = await this.saveSOSAlert(theftSOSAlert, {
+        persistCrimeReport: false,
+      });
 
       // Send notification to paired mobile app
-      await PairingService.sendSOSToMobile(theftSOSAlert);
+      await PairingService.sendSOSToMobile(storedAlert ?? theftSOSAlert);
 
       console.log('SOS Service: Theft SOS alert sent successfully');
     } catch (error) {
@@ -407,14 +583,38 @@ class SOSService {
       }
 
       const reportId = theftReportData.timestamp.toString();
+      const timestampIso = new Date(theftReportData.timestamp).toISOString();
+
+      const alignedReport = {
+        crimeType: theftReportData.crimeType,
+        dateTime: timestampIso,
+        description: theftReportData.description,
+        multimedia: theftReportData.multimedia ?? [],
+        videos: theftReportData.videos ?? [],
+        location: {
+          latitude: theftReportData.location.latitude,
+          longitude: theftReportData.location.longitude,
+          address: theftReportData.location.address,
+        },
+        barangay: theftReportData.barangay ?? 'Unknown',
+        anonymous: theftReportData.anonymous ?? false,
+        reporterName: theftReportData.reporterName ?? 'Smartwatch Auto Report',
+        reporterUid: theftReportData.reporterUid ?? userId,
+        status: theftReportData.status ?? 'pending',
+        createdAt: theftReportData.createdAt ?? timestampIso,
+        createdVia: theftReportData.createdVia ?? 'smartwatch_auto_theft_detection',
+        reportId,
+        severity: theftReportData.severity ?? 'Immediate',
+        upvotes: theftReportData.upvotes ?? 0,
+        downvotes: theftReportData.downvotes ?? 0,
+        userVotes: theftReportData.userVotes ?? {},
+        isTheftDetection: theftReportData.isTheftDetection,
+        theftDetails: theftReportData.theftDetails,
+        triggerSource: theftReportData.triggerSource ?? 'smartwatch_theft_detection',
+        timestamp: theftReportData.timestamp,
+      };
       
-      // Save to civilian crime reports (main collection)
-      const civilianReportsRef = ref(database, `civilian/civilian crime reports/${reportId}`);
-      await set(civilianReportsRef, theftReportData);
-      
-      // Save to user's personal crime reports
-      const userReportsRef = ref(database, `civilian/civilian account/${userId}/crime reports/${reportId}`);
-      await set(userReportsRef, theftReportData);
+      await this.persistCrimeReport(userId, reportId, alignedReport);
       
       console.log('SOS Service: Theft report saved to database with ID:', reportId);
     } catch (error) {
